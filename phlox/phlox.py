@@ -132,8 +132,7 @@ async def main() -> None:
     if arg.sync:
         log.info("Fetching package serials...")
         upstream = PyPIUpstream()
-        async with upstream:
-            remote_state = await upstream.list_packages()
+        remote_state = await upstream.list_packages()
         # local_state.update(remote_state)
         if arg.packages:
             _check_package_exist(remote_state)

@@ -84,10 +84,9 @@ async def sync(package: str, upstream: Upstream) -> None:
             except VerificationFailed:
                 log.warning("File {rel_path} in database but not correct!")
 
-            async with upstream:
-                await upstream.download_dist(
-                    file["digests"]["blake2b_256"], file["filename"]
-                )
+            log.debug("downloading %s", rel_path)
+            os.makedirs(os.path.dirname(rel_path), exist_ok=True)
+            await upstream.fetch_dist(file, rel_path)
             local_dists.add(
                 Distribution(
                     file["digests"]["blake2b_256"],
