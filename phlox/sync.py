@@ -3,6 +3,8 @@ import logging as log
 import os
 from datetime import datetime
 
+import aiohttp
+
 from . import BadUpstream, VerificationFailed
 from .db import local_state, local_dists, Distribution
 from .util import dist_rel_path
@@ -63,8 +65,14 @@ async def generate_global_simple_page() -> None:
 
 
 async def sync(package: str, upstream: Upstream) -> None:
-    async with upstream:
+    try:
         metadata = await upstream.query_metadata(package)
+    except aiohttp.ClientResponseError as e:
+        if e.code == 404:
+            log.error("metadata of package %s is not found", package)
+            return
+        raise
+
     if package in local_state:
         if metadata["last_serial"] < local_state[package]:
             raise BadUpstream(
