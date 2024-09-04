@@ -10,6 +10,7 @@ from .db import local_state, local_dists, Distribution
 from .util import dist_rel_path
 from .upstream import Upstream
 from .verify import verify_file
+from .delete import delete_dist
 
 
 async def generate_simple_page(package: str) -> None:
@@ -88,6 +89,7 @@ async def sync(package: str, upstream: Upstream) -> None:
                 if file["digests"]["blake2b_256"] in local_file:
                     verify_file(rel_path, file["size"], file["digests"]["sha256"])
                     log.debug("skipping file %s", rel_path)
+                    local_file.pop(file["digests"]["blake2b_256"])
                     continue
             except VerificationFailed:
                 log.warning("File {rel_path} in database but not correct!")
@@ -108,5 +110,7 @@ async def sync(package: str, upstream: Upstream) -> None:
                 )
             )
 
-    await generate_simple_page(package)
+    for dist in local_file.values():
+        delete_dist(dist)
+
     local_state[package] = metadata["last_serial"]

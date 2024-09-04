@@ -3,14 +3,15 @@ import logging as log
 import os
 import shutil
 
-from .db import local_state, local_dists
+from . import VerificationFailed
+from .db import local_state, local_dists, Distribution
 from .util import dist_rel_path
 
 
-async def delete_dist(blake: str, filename: str) -> None:
-    rel_path = dist_rel_path(blake, filename)
+def delete_dist(dist: Distribution) -> None:
+    rel_path = dist_rel_path(dist.blake, dist.name)
     log.debug("deleting %s", rel_path)
-    local_dists.delete(blake)
+    local_dists.delete(dist.blake)
     try:
         os.unlink(rel_path)
     except FileNotFoundError:
@@ -27,6 +28,6 @@ async def delete(package: str) -> None:
     del local_state[package]
     dists = local_dists.by_package(package)
     for dist in dists:
-        await delete_dist(dist.blake, dist.name)
+        delete_dist(dist)
     shutil.rmtree(f"simple/{package}/")
     # shutil.rmtree(f"pypi/{package}/")
