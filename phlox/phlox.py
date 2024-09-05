@@ -46,7 +46,6 @@ def _parse_args() -> None:
     argparser.add_argument(
         "-w",
         "--worker",
-        default=1,
         type=int,
         metavar="N",
         help="Concurrent syncing thread\nDefaults to 4 for sync, 1 for others",
