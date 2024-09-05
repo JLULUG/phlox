@@ -135,13 +135,11 @@ async def main() -> None:
         remote_state = await upstream.list_packages()
         # local_state.update(remote_state)
         if arg.packages:
-            _check_package_exist(remote_state)
             targets = arg.packages
         else:
             targets = [x[0] for x in set(remote_state.items()) ^ set(local_state)]
     else:
         if arg.packages:
-            _check_package_exist(local_state)
             targets = arg.packages
         else:
             targets = set(package for package, _ in local_state)

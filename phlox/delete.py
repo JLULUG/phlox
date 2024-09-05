@@ -25,6 +25,8 @@ def delete_dist(dist: Distribution) -> None:
 
 
 async def delete(package: str) -> None:
+    if package not in local_state:
+        raise VerificationFailed(f"package {package} does not exist")
     del local_state[package]
     dists = local_dists.by_package(package)
     for dist in dists:
