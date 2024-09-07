@@ -1,4 +1,5 @@
 import logging as log
+from typing import Any
 
 import os
 from datetime import datetime
@@ -11,16 +12,16 @@ from .util import dist_rel_path
 from .upstream import Upstream
 from .verify import verify_file
 from .delete import delete_dist
+from .filter import filter_metadata
 
 
-async def generate_simple_page(package: str) -> None:
+async def generate_simple_page(package: str, metadata: dict[str, Any]) -> None:
     log.debug("generating simple page for %s", package)
-    dists = local_dists.by_package(package)
-    dists = sorted(dists, key=lambda x: x.name)
     files = "\n".join(
         [
-            f'    <a href="../../{dist_rel_path(dist.blake, dist.name)}#sha256={dist.sha256}">{dist.name}</a><br/>'
-            for dist in dists
+            f'    <a href="../../{dist_rel_path(file['digests']['blake2b_256'], file['filename'])}#sha256={file['digests']['sha256']}">{file['filename']}</a><br/>'
+            for release in metadata["releases"].values()
+            for file in release
         ]
     )
     html = f"""
@@ -35,7 +36,7 @@ async def generate_simple_page(package: str) -> None:
 {files}
 </body>
 </html>
-<!--SERIAL {local_state[package]}-->
+<!--SERIAL {metadata['last_serial']}-->
 """
     os.makedirs(f"simple/{package}", exist_ok=True)
     with open(f"simple/{package}/index.html", "w", encoding="utf-8") as f:
@@ -80,8 +81,9 @@ async def sync(package: str, upstream: Upstream) -> None:
                 f"local serial is newer than upstream for package {package}"
             )
 
+    filtered = filter_metadata(package, metadata)
     local_file = {dist.blake: dist for dist in local_dists.by_package(package)}
-    for release in metadata["releases"].values():
+    for release in filtered["releases"].values():
         for file in release:
             rel_path = dist_rel_path(file["digests"]["blake2b_256"], file["filename"])
 
@@ -113,4 +115,5 @@ async def sync(package: str, upstream: Upstream) -> None:
     for dist in local_file.values():
         delete_dist(dist)
 
+    await generate_simple_page(package, metadata)
     local_state[package] = metadata["last_serial"]
